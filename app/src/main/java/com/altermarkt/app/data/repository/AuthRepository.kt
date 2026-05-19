@@ -32,7 +32,6 @@ class AuthRepository {
                 "name"     to name,
                 "email"    to email,
                 "whatsapp" to whatsapp,
-                "photoUrl" to ""
             )
             db.collection("users")
                 .document(uid)
@@ -85,7 +84,6 @@ class AuthRepository {
                 name     = doc.getString("name")     ?: "",
                 email    = doc.getString("email")    ?: "",
                 whatsapp = doc.getString("whatsapp") ?: "",
-                photoUrl = doc.getString("photoUrl") ?: ""
             )
         } catch (e: Exception) {
             null

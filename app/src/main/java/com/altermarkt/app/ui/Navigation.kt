@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.altermarkt.app.ui.auth.LoginScreen
+import com.altermarkt.app.ui.auth.RegisterScreen
 
 object Routes {
     const val LOGIN    = "login"
@@ -30,8 +32,12 @@ fun AlterMarketNavHost(
         navController    = navController,
         startDestination = startDestination
     ) {
-        composable(Routes.LOGIN) { }
-        composable(Routes.REGISTER) { }
+        composable(Routes.LOGIN) {
+            LoginScreen(navController)
+        }
+        composable(Routes.REGISTER) {
+            RegisterScreen(navController)
+        }
         composable(Routes.HOME) { }
         composable(Routes.SEARCH) { }
         composable(Routes.DETAIL) { backStackEntry ->
