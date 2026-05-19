@@ -6,5 +6,4 @@ data class User(
     val name : String = "",
     val email : String = "",
     val whatsapp : String = "",
-    val photourl : String = "",
 )
