@@ -6,13 +6,17 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database( //memberitahu Room ini adalah class database utama
-    entities = [SavedProductEntity::class], // daftar semua tabel yang ada di database ini
-    version = 1, // versi database, nanti kalau ada perubahan struktur tabel harus dinaikkan
+    entities = [
+        SavedProductEntity::class, // daftar semua tabel yang ada di database ini
+        HomeProductEntity::class
+    ],
+    version = 2, // versi database, nanti kalau ada perubahan struktur tabel harus dinaikkan
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun savedProductDao(): SavedProductDao
+    abstract fun homeProductDao(): HomeProductDao
 
     companion object { // pattern Singleton supaya database hanya dibuat satu kali selama aplikasi berjalan, tidak boros memory
         @Volatile
@@ -24,7 +28,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "altermarket_db"
-                ).build().also { INSTANCE = it }
+                )
+                    .fallbackToDestructiveMigration()   //ditambahkan supaya tidak crash saat versi naik.
+                    .build().also { INSTANCE = it }
             }
         }
     }
