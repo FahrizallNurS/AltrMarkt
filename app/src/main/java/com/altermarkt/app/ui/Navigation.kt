@@ -1,11 +1,16 @@
 package com.altermarkt.app.ui
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.altermarkt.app.data.local.AppDatabase
+import com.altermarkt.app.data.repository.HomeProductRepository
 import com.altermarkt.app.ui.auth.LoginScreen
 import com.altermarkt.app.ui.auth.RegisterScreen
+import com.altermarkt.app.ui.screen.HomeScreen
+import com.altermarkt.app.ui.viewmodel.HomeViewModel
 
 object Routes {
     const val LOGIN    = "login"
@@ -24,9 +29,11 @@ object Routes {
 @Composable
 fun AlterMarketNavHost(
     navController: NavHostController,
-    isLoggedIn: Boolean
+    isLoggedIn: Boolean,
+    db: AppDatabase
 ) {
     val startDestination = if (isLoggedIn) Routes.HOME else Routes.LOGIN
+    val repo = HomeProductRepository(db)
 
     NavHost(
         navController    = navController,
@@ -38,7 +45,13 @@ fun AlterMarketNavHost(
         composable(Routes.REGISTER) {
             RegisterScreen(navController)
         }
-        composable(Routes.HOME) { }
+        composable(Routes.HOME) {
+            HomeScreen(
+                viewModel = HomeViewModel(repo),
+                onProductClick = { id -> navController.navigate(Routes.detail(id))},
+                onSearchClick = { navController.navigate(Routes.SEARCH)}
+            )
+        }
         composable(Routes.SEARCH) { }
         composable(Routes.DETAIL) { backStackEntry ->
             val productId = backStackEntry.arguments?.getString("productId") ?: ""
