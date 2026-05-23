@@ -9,7 +9,9 @@ import com.altermarkt.app.data.local.AppDatabase
 import com.altermarkt.app.data.repository.HomeProductRepository
 import com.altermarkt.app.ui.auth.LoginScreen
 import com.altermarkt.app.ui.auth.RegisterScreen
+import com.altermarkt.app.ui.screen.DetailScreen
 import com.altermarkt.app.ui.screen.HomeScreen
+import com.altermarkt.app.ui.viewmodel.DetailViewModel
 import com.altermarkt.app.ui.viewmodel.HomeViewModel
 
 object Routes {
@@ -47,15 +49,29 @@ fun AlterMarketNavHost(
         }
         composable(Routes.HOME) {
             HomeScreen(
-                viewModel = HomeViewModel(repo),
+                viewModel = HomeViewModel(repo, db),
                 onProductClick = { id -> navController.navigate(Routes.detail(id))},
                 onSearchClick = { navController.navigate(Routes.SEARCH)}
             )
         }
         composable(Routes.SEARCH) { }
         composable(Routes.DETAIL) { backStackEntry ->
-            val productId = backStackEntry.arguments?.getString("productId") ?: ""
+            val productId = backStackEntry.arguments?.getString("productId") ?: "1"
+            val viewModel: DetailViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return DetailViewModel(repo) as T
+                    }
+                }
+            )
+            DetailScreen(
+                productId = productId,
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
         }
+
         composable(Routes.POSTING) { }
         composable(Routes.SAVED) { }
         composable(Routes.PROFILE) { }

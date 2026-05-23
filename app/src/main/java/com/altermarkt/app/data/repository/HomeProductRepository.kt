@@ -31,6 +31,7 @@ class HomeProductRepository(private val db: AppDatabase) {
         imageUrl    = imageUrl,
         sellerId    = sellerId,
         sellerName  = sellerName,
+        sellerPhone = sellerPhone,
         isAvailable = isAvailable,
         viewCount   = viewCount,
         likeCount   = likeCount,

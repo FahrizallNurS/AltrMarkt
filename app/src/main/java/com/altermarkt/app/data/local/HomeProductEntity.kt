@@ -15,6 +15,7 @@ data class HomeProductEntity(
     val imageUrl: String,
     val sellerId: String,
     val sellerName: String,
+    val sellerPhone: String,
     val isAvailable: Boolean,
     val viewCount: Int,
     val likeCount: Int,
