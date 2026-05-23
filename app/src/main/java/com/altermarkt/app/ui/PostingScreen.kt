@@ -76,12 +76,12 @@ fun PostingScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(BgDark),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 40.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // --- HEADER ---
         item {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(48.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically

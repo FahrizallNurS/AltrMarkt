@@ -28,8 +28,10 @@ object Routes {
     const val PROFILE  = "profile"
     const val KELOLA   = "kelola"
     const val DETAIL   = "detail/{productId}"
+    const val EDIT     = "edit/{productId}"
 
     fun detail(productId: String) = "detail/$productId"
+    fun edit(productId: String) = "edit/$productId"
 }
 
 @Composable
@@ -58,9 +60,9 @@ fun AlterMarketNavHost(
         // ── HOME ──────────────────────────────────
         composable(Routes.HOME) {
             HomeScreen(
-                viewModel      = HomeViewModel(repo, db),
+                viewModel = HomeViewModel(repo, db),
                 onProductClick = { id -> navController.navigate(Routes.detail(id)) },
-                onSearchClick  = { navController.navigate(Routes.SEARCH) }
+                onSearchClick = { navController.navigate(Routes.SEARCH) }
             )
         }
 
@@ -81,7 +83,7 @@ fun AlterMarketNavHost(
             DetailScreen(
                 productId = productId,
                 viewModel = viewModel,
-                onBack    = { navController.popBackStack() }
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -92,9 +94,9 @@ fun AlterMarketNavHost(
 
         // ── SAVED ─────────────────────────────────
         composable(Routes.SAVED) {
-            val database  = AppDatabase.getInstance(context)
-            val dao       = database.savedProductDao()
-            val saveRepo  = SaveRepo(dao)
+            val database = AppDatabase.getInstance(context)
+            val dao = database.savedProductDao()
+            val saveRepo = SaveRepo(dao)
             val savedViewModel: SavedVM = viewModel(
                 factory = SavedVMFactory(saveRepo)
             )
@@ -103,10 +105,32 @@ fun AlterMarketNavHost(
 
         // ── PROFILE ───────────────────────────────
         composable(Routes.PROFILE) {
-            ProfileScreen()
+            ProfileScreen(
+                onLogoutSuccess = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                    }
+                },
+                onEditProductClick = { productId ->
+                    navController.navigate(Routes.edit(productId))
+                }
+            )
         }
 
         // ── KELOLA ────────────────────────────────
         composable(Routes.KELOLA) { }
+
+
+        // --- TAMBAHKAN BLOK INI ---
+        composable(Routes.EDIT) { backStackEntry ->
+            // Tangkap ID produk yang dikirim dari halaman profil
+            val productId = backStackEntry.arguments?.getString("productId") ?: ""
+
+            // Panggil file EditScreen milik Anda di sini
+            EditScreen(
+                productId = productId,
+                onBack = { navController.popBackStack() }
+            )
+        }
     }
 }

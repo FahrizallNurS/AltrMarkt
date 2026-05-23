@@ -1,6 +1,9 @@
 package com.altermarkt.app.ui
 
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,32 +21,72 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.altermarkt.app.ui.theme.*
+import com.altermarkt.app.ui.viewmodel.EditVM
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditScreen() {
-    // State yang sudah terisi data lama barang (Contoh simulasi data MacBook dari mockup Anda)
-    var namaBarang by remember { mutableStateOf("Iphone 14 Pro Max") }
-    var hargaBarang by remember { mutableStateOf("Rp. 17000000") }
-    var deskripsiBarang by remember { mutableStateOf("MacBook Pro 14\" dengan chip Apple M3, 16GB RAM, 512GB SSD. Kondisi 98% mulus, lengkap charger original. Garansi resmi masih aktif hingga Desember 2025.") }
+fun EditScreen(
+    productId: String,
+    onBack: () -> Unit,
+    viewModel: EditVM = viewModel()
+) {
+    val context = LocalContext.current
+    val loadedProduct = viewModel.product
 
-    // State Dropdown Kategori
+    var namaBarang by remember { mutableStateOf("") }
+    var hargaBarang by remember { mutableStateOf("") }
+    var deskripsiBarang by remember { mutableStateOf("") }
+
     var kategoriExpanded by remember { mutableStateOf(false) }
     val kategoriList = listOf("Elektronik", "Fashion", "Buku & Alat Tulis", "Perlengkapan Kos", "Lainnya")
     var kategoriTerpilih by remember { mutableStateOf(kategoriList[0]) }
 
-    // --- FITUR BARU: State Dropdown Status (Saran Dosen) ---
     var statusExpanded by remember { mutableStateOf(false) }
     val statusList = listOf("Tersedia", "Terjual")
-    var statusTerpilih by remember { mutableStateOf(statusList[1]) } // Default "Terjual" sesuai mockup Anda
+    var statusTerpilih by remember { mutableStateOf(statusList[0]) }
 
-    // State URI foto (sementara diset null, nanti akan memuat foto lama dari Firebase Storage)
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var newImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    // Ambil data detail barang dari Firestore
+    LaunchedEffect(productId) {
+        viewModel.loadProductDetail(productId)
+    }
+
+    val formatter = java.text.NumberFormat.getInstance(java.util.Locale("in", "ID"))
+    // Tarik data lama ke dalam form input
+    LaunchedEffect(loadedProduct) {
+        loadedProduct?.let {
+            namaBarang = it.title
+            hargaBarang = formatter.format(it.price)
+            deskripsiBarang = it.description
+            if (it.category in kategoriList) kategoriTerpilih = it.category
+            statusTerpilih = if (it.isAvailable) "Tersedia" else "Terjual"
+        }
+    }
+
+    // Tangani notifikasi pop-up Toast
+    LaunchedEffect(viewModel.updateMessage) {
+        viewModel.updateMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            if (message == "Produk berhasil diperbarui!" || message == "Postingan berhasil dihapus!") {
+                onBack()
+            }
+            viewModel.resetMessage()
+        }
+    }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) newImageUri = uri
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -60,16 +103,12 @@ fun EditScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = { /* TODO: Kembali */ },
+                    onClick = onBack,
                     modifier = Modifier
                         .background(SurfaceDark, RoundedCornerShape(12.dp))
                         .size(40.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Kembali",
-                        tint = Color.White
-                    )
+                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Kembali", tint = Color.White)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
@@ -79,7 +118,7 @@ fun EditScreen() {
             }
         }
 
-        // --- KOTAK UBAH FOTO ---
+        // --- KOTAK UBAH FOTO BARANG ---
         item {
             Box(
                 modifier = Modifier
@@ -88,197 +127,122 @@ fun EditScreen() {
                     .clip(RoundedCornerShape(16.dp))
                     .background(SurfaceDark)
                     .border(1.dp, PrimaryPurple, RoundedCornerShape(16.dp))
-                    .clickable { /* TODO: Ubah Foto */ },
+                    .clickable { imagePickerLauncher.launch("image/*") },
                 contentAlignment = Alignment.Center
             ) {
-                if (imageUri == null) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowUp,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(40.dp)
-                        )
+                if (newImageUri != null) {
+                    AsyncImage(model = newImageUri, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                } else if (loadedProduct?.imageUrl != null) {
+                    AsyncImage(model = loadedProduct.imageUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(imageVector = Icons.Default.KeyboardArrowUp, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(text = "Ubah Foto Barang", color = Color.White, fontSize = 14.sp)
                     }
-                } else {
-                    AsyncImage(
-                        model = imageUri,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
                 }
             }
         }
 
-        // --- FORM INPUT & EDIT DATA ---
+        // --- FORM DATA INPUT ---
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
-                // Edit Nama
                 Text(text = "Nama Barang", color = TextGray, fontSize = 14.sp)
                 OutlinedTextField(
-                    value = namaBarang,
-                    onValueChange = { namaBarang = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = SurfaceDark,
-                        unfocusedContainerColor = SurfaceDark,
-                        focusedIndicatorColor = PrimaryPurple,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
+                    value = namaBarang, onValueChange = { namaBarang = it }, modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(focusedContainerColor = SurfaceDark, unfocusedContainerColor = SurfaceDark, focusedIndicatorColor = PrimaryPurple, unfocusedIndicatorColor = Color.Transparent, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                // Edit Harga
                 Text(text = "Harga", color = TextGray, fontSize = 14.sp)
                 OutlinedTextField(
-                    value = hargaBarang,
-                    onValueChange = { hargaBarang = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = SurfaceDark,
-                        unfocusedContainerColor = SurfaceDark,
-                        focusedIndicatorColor = PrimaryPurple,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
+                    value = hargaBarang, onValueChange = { hargaBarang = it }, modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(focusedContainerColor = SurfaceDark, unfocusedContainerColor = SurfaceDark, focusedIndicatorColor = PrimaryPurple, unfocusedIndicatorColor = Color.Transparent, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                // Edit Kategori
                 Text(text = "Kategori", color = TextGray, fontSize = 14.sp)
-                ExposedDropdownMenuBox(
-                    expanded = kategoriExpanded,
-                    onExpandedChange = { kategoriExpanded = !kategoriExpanded }
-                ) {
+                ExposedDropdownMenuBox(expanded = kategoriExpanded, onExpandedChange = { kategoriExpanded = !kategoriExpanded }) {
                     OutlinedTextField(
-                        value = kategoriTerpilih,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = kategoriTerpilih, onValueChange = {}, readOnly = true,
                         trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = PrimaryPurple) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = SurfaceDark,
-                            unfocusedContainerColor = SurfaceDark,
-                            focusedIndicatorColor = PrimaryPurple,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        colors = TextFieldDefaults.colors(focusedContainerColor = SurfaceDark, unfocusedContainerColor = SurfaceDark, focusedIndicatorColor = PrimaryPurple, unfocusedIndicatorColor = Color.Transparent, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    ExposedDropdownMenu(
-                        expanded = kategoriExpanded,
-                        onDismissRequest = { kategoriExpanded = false },
-                        modifier = Modifier.background(SurfaceDark)
-                    ) {
+                    ExposedDropdownMenu(expanded = kategoriExpanded, onDismissRequest = { kategoriExpanded = false }, modifier = Modifier.background(SurfaceDark)) {
                         kategoriList.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(text = item, color = Color.White) },
-                                onClick = {
-                                    kategoriTerpilih = item
-                                    kategoriExpanded = false
-                                }
-                            )
+                            DropdownMenuItem(text = { Text(text = item, color = Color.White) }, onClick = { kategoriTerpilih = item; kategoriExpanded = false })
                         }
                     }
                 }
 
-                // Edit Deskripsi
                 Text(text = "Deskripsi", color = TextGray, fontSize = 14.sp)
                 OutlinedTextField(
-                    value = deskripsiBarang,
-                    onValueChange = { deskripsiBarang = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = SurfaceDark,
-                        unfocusedContainerColor = SurfaceDark,
-                        focusedIndicatorColor = PrimaryPurple,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
+                    value = deskripsiBarang, onValueChange = { deskripsiBarang = it }, modifier = Modifier.fillMaxWidth().height(150.dp),
+                    colors = TextFieldDefaults.colors(focusedContainerColor = SurfaceDark, unfocusedContainerColor = SurfaceDark, focusedIndicatorColor = PrimaryPurple, unfocusedIndicatorColor = Color.Transparent, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                // --- FITUR BARU: Edit Status Ketersediaan (Saran Dosen) ---
                 Text(text = "Status", color = TextGray, fontSize = 14.sp)
-                ExposedDropdownMenuBox(
-                    expanded = statusExpanded,
-                    onExpandedChange = { statusExpanded = !statusExpanded }
-                ) {
+                ExposedDropdownMenuBox(expanded = statusExpanded, onExpandedChange = { statusExpanded = !statusExpanded }) {
                     OutlinedTextField(
-                        value = statusTerpilih,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = statusTerpilih, onValueChange = {}, readOnly = true,
                         trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = PrimaryPurple) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = SurfaceDark,
-                            unfocusedContainerColor = SurfaceDark,
-                            focusedIndicatorColor = PrimaryPurple,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        colors = TextFieldDefaults.colors(focusedContainerColor = SurfaceDark, unfocusedContainerColor = SurfaceDark, focusedIndicatorColor = PrimaryPurple, unfocusedIndicatorColor = Color.Transparent, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    ExposedDropdownMenu(
-                        expanded = statusExpanded,
-                        onDismissRequest = { statusExpanded = false },
-                        modifier = Modifier.background(SurfaceDark)
-                    ) {
+                    ExposedDropdownMenu(expanded = statusExpanded, onDismissRequest = { statusExpanded = false }, modifier = Modifier.background(SurfaceDark)) {
                         statusList.forEach { status ->
-                            DropdownMenuItem(
-                                text = { Text(text = status, color = Color.White) },
-                                onClick = {
-                                    statusTerpilih = status
-                                    statusExpanded = false
-                                }
-                            )
+                            DropdownMenuItem(text = { Text(text = status, color = Color.White) }, onClick = { statusTerpilih = status; statusExpanded = false })
                         }
                     }
                 }
             }
         }
 
-        // --- TOMBOL EDIT & SIMPAN SEJAJAR ---
+        // --- TOMBOL HAPUS & SIMPAN SEJAJAR (MOCKUP ACCURATE) ---
         item {
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Tombol Hapus (Kiri)
                 Button(
-                    onClick = { /* TODO */ },
+                    onClick = { viewModel.deleteProduct(productId, onSuccess = onBack) },
                     modifier = Modifier.weight(1f).height(45.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !viewModel.isLoading
                 ) {
-                    Text(text = "Edit", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(text = "Hapus", fontWeight = FontWeight.Bold, color = Color.White)
                 }
+
+                // Tombol Simpan Perubahan (Kanan)
                 Button(
-                    onClick = { /* TODO */ },
+                    onClick = {
+                        // Jalankan fungsi update ke ViewModel
+                        viewModel.updateProduct(
+                            productId = productId,
+                            newTitle = namaBarang,
+                            newPriceString = hargaBarang,
+                            newCategory = kategoriTerpilih,
+                            newDesc = deskripsiBarang,
+                            newImageUri = newImageUri
+                        )
+                    },
                     modifier = Modifier.weight(1f).height(45.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !viewModel.isLoading
                 ) {
-                    Text(text = "Simpan", fontWeight = FontWeight.Bold, color = Color.White)
+                    if (viewModel.isLoading) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(text = "Simpan", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
                 }
             }
         }

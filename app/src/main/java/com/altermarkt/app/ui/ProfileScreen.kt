@@ -1,9 +1,13 @@
 package com.altermarkt.app.ui
 
+import android.widget.Toast
+import java.text.NumberFormat
+import java.util.Locale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -15,178 +19,197 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.altermarkt.app.domain.model.Product
 import com.altermarkt.app.ui.theme.*
-
-// 1. Tambahkan DummyProduct sementara agar UI tidak error
-data class DummyProduct(val id: String, val name: String, val price: String, val imageUrl: String)
+import com.altermarkt.app.ui.viewmodel.ProfileVM
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
-    var namaLengkap by remember { mutableStateOf("Kimi Antonelli") }
-    var nomorWhatsApp by remember { mutableStateOf("+6219221889") }
-    var bioProfile by remember { mutableStateOf("Mahasiswa TI 4C") }
+fun ProfileScreen(
+    profileViewModel: ProfileVM = viewModel(),
+    authViewModel: AuthViewModel = viewModel(),
+    onLogoutSuccess: () -> Unit = {},
+    onEditProductClick: (String) -> Unit = {}
+) {
+    val context = LocalContext.current
+    val user = profileViewModel.currentUser
+    val myProducts = profileViewModel.myProducts
 
-    // 2. Ubah pemanggilan menjadi DummyProduct
-    val myProducts = listOf(
-        DummyProduct("1", "Iphone 14 Pro Max", "Rp. 17.000.00,00", "https://via.placeholder.com/300"),
-        DummyProduct("2", "Iphone 14 Pro Max", "Rp. 17.000.00,00", "https://via.placeholder.com/300")
-    )
+    var namaLengkap by remember { mutableStateOf("") }
+    var nomorWhatsApp by remember { mutableStateOf("") }
+    var bioProfile by remember { mutableStateOf("Mahasiswa") } // Nilai default statis sesuai mockup
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BgDark),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // --- HEADER & TOMBOL LOGOUT ---
-        item {
-            Spacer(modifier = Modifier.height(48.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Column {
-                    Text(text = "Pengaturan", color = TextGray, fontSize = 16.sp)
-                    Text(text = "Profil", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
-                }
-                Button(
-                    onClick = { /* TODO: Logout */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
-                ) {
-                    Text(text = "Logout", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            }
+    // Sinkronisasi data user dari Firestore ke form input teks
+    LaunchedEffect(user) {
+        user?.let {
+            namaLengkap = it.name
+            nomorWhatsApp = it.whatsapp
         }
+    }
 
-        // --- AVATAR PROFIL ---
-        item {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(120.dp)
-                )
-            }
-        }
+    // Trigger muat ulang setiap kali halaman dibuka
+    LaunchedEffect(Unit) {
+        profileViewModel.loadProfileAndProducts()
+    }
 
-        // --- FORM INPUT DATA ---
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(text = "Nama Lengkap", color = TextGray, fontSize = 14.sp)
-                OutlinedTextField(
-                    value = namaLengkap,
-                    onValueChange = { namaLengkap = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = SurfaceDark,
-                        unfocusedContainerColor = SurfaceDark,
-                        disabledContainerColor = SurfaceDark,
-                        focusedIndicatorColor = PrimaryPurple,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Text(text = "Nomor WhatsApp", color = TextGray, fontSize = 14.sp)
-                OutlinedTextField(
-                    value = nomorWhatsApp,
-                    onValueChange = { nomorWhatsApp = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = SurfaceDark,
-                        unfocusedContainerColor = SurfaceDark,
-                        disabledContainerColor = SurfaceDark,
-                        focusedIndicatorColor = PrimaryPurple,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Text(text = "Bio", color = TextGray, fontSize = 14.sp)
-                OutlinedTextField(
-                    value = bioProfile,
-                    onValueChange = { bioProfile = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = SurfaceDark,
-                        unfocusedContainerColor = SurfaceDark,
-                        disabledContainerColor = SurfaceDark,
-                        focusedIndicatorColor = PrimaryPurple,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
-            }
-        }
-
-        // --- TOMBOL EDIT & SIMPAN ---
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Button(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    // Tambahkan color = Color.White di sini
-                    Text(text = "Edit", fontWeight = FontWeight.Bold, color = Color.White)
-                }
-                Button(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    // Tambahkan color = Color.White di sini
-                    Text(text = "Simpan", fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            }
-        }
-
-        // --- JUDUL BAGIAN POSTINGAN ---
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Postingan Anda",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
+    Box(modifier = Modifier.fillMaxSize().background(BgDark)) {
+        if (profileViewModel.isLoading) {
+            CircularProgressIndicator(
+                color = PrimaryPurple,
+                modifier = Modifier.align(Alignment.Center)
             )
-        }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(BgDark),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // --- HEADER & TOMBOL LOGOUT ---
+                item {
+                    Spacer(modifier = Modifier.height(48.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Column {
+                            Text(text = "Pengaturan", color = TextGray, fontSize = 16.sp)
+                            Text(text = "Profil", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = {
+                                authViewModel.logout()
+                                Toast.makeText(context, "Berhasil Logout", Toast.LENGTH_SHORT).show()
+                                onLogoutSuccess()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+                        ) {
+                            Text(text = "Logout", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
 
-        // --- DAFTAR POSTINGAN ---
-        items(myProducts) { product ->
-            MyProductRowItem(product)
+                // --- AVATAR PROFIL ---
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(120.dp)
+                        )
+                    }
+                }
+
+                // --- FORM INPUT DATA ---
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(text = "Nama Lengkap", color = TextGray, fontSize = 14.sp)
+                        OutlinedTextField(
+                            value = namaLengkap,
+                            onValueChange = { namaLengkap = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = SurfaceDark,
+                                unfocusedContainerColor = SurfaceDark,
+                                focusedIndicatorColor = PrimaryPurple,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Text(text = "Nomor WhatsApp", color = TextGray, fontSize = 14.sp)
+                        OutlinedTextField(
+                            value = nomorWhatsApp,
+                            onValueChange = { nomorWhatsApp = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = SurfaceDark,
+                                unfocusedContainerColor = SurfaceDark,
+                                focusedIndicatorColor = PrimaryPurple,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Text(text = "Bio", color = TextGray, fontSize = 14.sp)
+                        OutlinedTextField(
+                            value = bioProfile,
+                            onValueChange = { bioProfile = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = SurfaceDark,
+                                unfocusedContainerColor = SurfaceDark,
+                                focusedIndicatorColor = PrimaryPurple,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                }
+
+                // --- TOMBOL SIMPAN PROFIL MOCKUP ---
+                item {
+                    Button(
+                        onClick = { Toast.makeText(context, "Profil diperbarui (Simulasi)", Toast.LENGTH_SHORT).show() },
+                        modifier = Modifier.fillMaxWidth().height(45.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
+                        shape = RoundedCornerShape(25.dp)
+                    ) {
+                        Text(text = "Simpan Profil", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                }
+
+                // --- JUDUL BAGIAN POSTINGAN ---
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Postingan Anda",
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // --- DAFTAR POSTINGAN RIIL ---
+                if (myProducts.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+                            Text(text = "Belum ada barang yang diposting", color = TextGray)
+                        }
+                    }
+                } else {
+                    items(myProducts) { product ->
+                        MyProductRowItem(product, onEditClick = onEditProductClick)
+                    }
+                }
+            }
         }
     }
 }
 
-// 3. Ubah parameter agar menerima DummyProduct
 @Composable
-fun MyProductRowItem(product: DummyProduct) {
+fun MyProductRowItem(product: Product, onEditClick: (String) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -210,13 +233,14 @@ fun MyProductRowItem(product: DummyProduct) {
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = product.name, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(text = product.title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = product.price, color = PrimaryPurple, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text(text = formatRupiah(product.price), color = PrimaryPurple, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
             }
 
             IconButton(
-                onClick = { /* TODO: Pindah ke Halaman Edit */ },
+                onClick = { onEditClick(product.id) },
                 modifier = Modifier
                     .background(PrimaryPurple, RoundedCornerShape(8.dp))
                     .size(36.dp)
@@ -229,5 +253,11 @@ fun MyProductRowItem(product: DummyProduct) {
                 )
             }
         }
+
     }
-}
+
+    fun formatRupiah(nominal: Int): String {
+        val localeID = Locale("in", "ID")
+        val formatter = NumberFormat.getInstance(localeID)
+        return "Rp ${formatter.format(nominal)}"
+    }
