@@ -32,12 +32,8 @@ fun AlterMarketNavHost(
     navController: NavHostController,
     isLoggedIn: Boolean
 ) {
-//    val startDestination = if (isLoggedIn) Routes.HOME else Routes.LOGIN
+    val startDestination = if (isLoggedIn) Routes.HOME else Routes.LOGIN
 
-    // tes
-    val startDestination = Routes.POSTING
-
-    // Ambil context aplikasi di sini
     val context = LocalContext.current
 
     NavHost(
