@@ -10,6 +10,7 @@ data class Product(
     val imageUrl : String = "",
     val sellerId : String = "",
     val sellerName : String = "",
+    val sellerPhone : String = "",
     val isAvailable : Boolean = true,
     val viewCount : Int = 0,
     val likeCount : Int = 0,
