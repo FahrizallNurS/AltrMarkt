@@ -10,7 +10,7 @@ import androidx.room.RoomDatabase
         SavedProductEntity::class, // daftar semua tabel yang ada di database ini
         HomeProductEntity::class
     ],
-    version = 2, // versi database, nanti kalau ada perubahan struktur tabel harus dinaikkan
+    version = 3, // versi database, nanti kalau ada perubahan struktur tabel harus dinaikkan
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
