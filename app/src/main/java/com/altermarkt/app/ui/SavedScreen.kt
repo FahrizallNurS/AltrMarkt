@@ -1,6 +1,7 @@
 package com.altermarkt.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -20,6 +21,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.altermarkt.app.data.local.SavedProductEntity
 import com.altermarkt.app.ui.theme.*
@@ -28,10 +30,10 @@ import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
-fun SavedScreen(viewModel: SavedVM) { // 1. Masukkan SavedVM sebagai parameter
-
-    // 2. Mengambil data real-time dari Room Database melalui ViewModel
-    // Setiap ada perubahan di database, variabel ini otomatis memperbarui UI
+fun SavedScreen(
+    viewModel: SavedVM = viewModel(),
+    onProductClick: (String) -> Unit = {}
+) {
     val savedProducts by viewModel.savedProducts.collectAsState()
 
     Column(
@@ -77,7 +79,10 @@ fun SavedScreen(viewModel: SavedVM) { // 1. Masukkan SavedVM sebagai parameter
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(savedProducts) { product ->
-                    SavedProductCard(product)
+                    SavedProductCard(
+                        product = product,
+                        onClick = { onProductClick(product.productId) }
+                    )
                 }
             }
         }
@@ -85,13 +90,18 @@ fun SavedScreen(viewModel: SavedVM) { // 1. Masukkan SavedVM sebagai parameter
 }
 
 @Composable
-fun SavedProductCard(product: SavedProductEntity) {
-    val formatter = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
+fun SavedProductCard(
+    product: SavedProductEntity,
+    onClick: () -> Unit = {}
+) {
+    val formatter = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("id-ID"))
     formatter.maximumFractionDigits = 0
     val formattedPrice = formatter.format(product.price).replace("Rp", "Rp ")
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceDark)
     ) {
