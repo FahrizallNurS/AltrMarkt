@@ -48,7 +48,7 @@ fun DetailScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBg)
-            .statusBarsPadding()
+            .padding(top = 32.dp)
             .verticalScroll(rememberScrollState())
     ) {
         Row(
@@ -87,11 +87,11 @@ fun DetailScreen(
                 modifier = Modifier.fillMaxWidth().height(220.dp),
                 contentScale = ContentScale.Crop
             )
+
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Badge kategori dan tombol like dalam 1 baris
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -135,7 +135,6 @@ fun DetailScreen(
                 Text(p.title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                 Text("Rp. ${"%,d".format(p.price)}", color = Color(0xFF00CFFF), fontSize = 16.sp)
 
-                // Badge status
                 val statusText = if (p.isAvailable) "Tersedia" else "Terjual"
                 val statusColor = if (p.isAvailable) Color(0xFF4CAF50) else Color(0xFFE53935)
                 Surface(

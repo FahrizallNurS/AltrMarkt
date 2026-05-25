@@ -24,9 +24,6 @@ class HomeViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _savedIds = MutableStateFlow<Set<String>>(emptySet())
-    val savedIds: StateFlow<Set<String>> = _savedIds
-
     init {
         syncProducts()
         loadProducts()
@@ -57,15 +54,5 @@ class HomeViewModel(
 
     fun selectCategory(cat: String) {
         _selectedCategory.value = cat
-    }
-
-    fun toggleSave(productId: String) {
-        val current = _savedIds.value.toMutableSet()
-        if (current.contains(productId)) {
-            current.remove(productId)
-        } else {
-            current.add(productId)
-        }
-        _savedIds.value = current
     }
 }

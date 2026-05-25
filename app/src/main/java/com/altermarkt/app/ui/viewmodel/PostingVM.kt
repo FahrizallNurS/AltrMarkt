@@ -16,16 +16,13 @@ import java.util.UUID
 
 class PostingVM : ViewModel() {
 
-    // Inisialisasi layanan Firebase
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    // State untuk memantau proses loading di UI
     var isLoading by mutableStateOf(false)
         private set
 
-    // State untuk menampilkan pesan sukses atau error ke pengguna
     var uploadMessage by mutableStateOf<String?>(null)
         private set
 
@@ -33,15 +30,12 @@ class PostingVM : ViewModel() {
         uploadMessage = null
     }
 
-    // Fungsi utama yang akan dipanggil saat tombol "Posting Barang" ditekan
     fun uploadProduct(imageUri: Uri?, title: String, priceString: String, category: String, description: String) {
-        // Validasi dasar
         if (title.isBlank() || priceString.isBlank() || category.isBlank() || imageUri == null) {
             uploadMessage = "Harap isi semua data dan pilih foto barang!"
             return
         }
 
-        // Konversi harga dari String ke Int (menghapus karakter selain angka)
         val priceInt = priceString.replace(Regex("[^0-9]"), "").toIntOrNull() ?: 0
 
         val currentUser = auth.currentUser
@@ -53,19 +47,15 @@ class PostingVM : ViewModel() {
         isLoading = true
         uploadMessage = "Mengunggah foto..."
 
-        // 1. Siapkan nama file unik untuk gambar
         val imageFileName = UUID.randomUUID().toString() + ".jpg"
         val storageRef = storage.reference.child("product_images/$imageFileName")
 
-        // 2. Mulai proses upload gambar ke Firebase Storage
         storageRef.putFile(imageUri)
             .addOnSuccessListener {
-                // Jika gambar berhasil diupload, ambil URL publiknya
                 uploadMessage = "Menyimpan data barang..."
                 storageRef.downloadUrl.addOnSuccessListener { uri ->
                     val downloadUrl = uri.toString()
 
-                    // Ambil nama penjual dari profil akun, atau berikan nama default
                     firestore.collection("users")
                         .document(currentUser.uid)
                         .get()
@@ -90,13 +80,9 @@ class PostingVM : ViewModel() {
         desc: String, imageUrl: String, sellerId: String,
         sellerName: String, sellerPhone: String
     ) {
-        // Buat ID unik untuk dokumen produk di Firestore
         val productId = firestore.collection("products").document().id
-
-        // Buat stempel waktu otomatis untuk kolom createdAt
         val currentDate = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
 
-        // Masukkan data ke dalam struktur Product buatan teman Anda
         val newProduct = Product(
             id          = productId,
             title       = title,
