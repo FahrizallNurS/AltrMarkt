@@ -25,9 +25,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.altermarkt.app.data.local.SavedProductEntity
 import com.altermarkt.app.domain.model.Product
 import com.altermarkt.app.ui.viewmodel.HomeViewModel
+import com.altermarkt.app.ui.viewmodel.SavedVM
 
+// Warna tema AlterMarkt
 val DarkBg = Color(0xFF0D0D0D)
 val CardBg = Color(0xFF1A1A1A)
 val PurpleAccent = Color(0xFF7C5CFC)
@@ -36,14 +39,20 @@ val TextMuted = Color(0xFF888888)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
+    savedVM: SavedVM,
     onProductClick: (String) -> Unit,
     onSearchClick: () -> Unit
 ) {
+    // Ambil state dari ViewModel
     val products by viewModel.products.collectAsState(initial = emptyList())
     val selectedCat by viewModel.selectedCategory.collectAsState(initial = "Semua")
     val isLoading by viewModel.isLoading.collectAsState(initial = false)
+
+    // Ambil daftar produk tersimpan dari Room, konversi ke Set ID
+    val savedProducts by savedVM.savedProducts.collectAsState()
+    val savedIds = savedProducts.map { it.productId }.toSet()
+
     val categories = listOf("Semua", "Elektronik", "Buku", "Pakaian")
-    val saveIds by viewModel.savedIds.collectAsState()
 
     Column(
         modifier = Modifier
@@ -53,10 +62,13 @@ fun HomeScreen(
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(20.dp))
+
+        // Judul aplikasi
         Text("AlterMarkt", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Medium)
         Text("Your Campus Marketplace", color = TextMuted, fontSize = 13.sp)
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Search bar — klik untuk pindah ke SearchScreen
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -73,6 +85,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Filter kategori — klik chip untuk filter produk
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             categories.forEach { cat ->
                 FilterChip(
@@ -90,15 +103,19 @@ fun HomeScreen(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        // Jumlah produk yang tampil
         Text("${products.size} item", color = TextMuted, fontSize = 13.sp)
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Loading indicator saat sync dari Firestore
         if (isLoading) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PurpleAccent)
             }
         }
 
+        // Grid 2 kolom untuk menampilkan produk
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -107,9 +124,25 @@ fun HomeScreen(
         ) {
             items(products) { product ->
                 ProductCard(
-                    product = product,
-                    isSaved = saveIds.contains(product.id),
-                    onSaveClick = { viewModel.toggleSave(product.id) },
+                    product     = product,
+                    isSaved     = savedIds.contains(product.id),
+                    onSaveClick = {
+                        // Jika sudah disimpan → hapus, jika belum → simpan ke Room
+                        if (savedIds.contains(product.id)) {
+                            savedVM.deleteProduct(product.id)
+                        } else {
+                            savedVM.saveProduct(
+                                SavedProductEntity(
+                                    productId  = product.id,
+                                    title      = product.title,
+                                    price      = product.price,
+                                    imageUrl   = product.imageUrl,
+                                    sellerName = product.sellerName,
+                                    savedAt    = System.currentTimeMillis().toString()
+                                )
+                            )
+                        }
+                    },
                     onClick = { onProductClick(product.id) }
                 )
             }
@@ -117,33 +150,37 @@ fun HomeScreen(
     }
 }
 
+// Komponen card untuk menampilkan 1 produk
 @Composable
 fun ProductCard(
     product: Product,
     isSaved: Boolean,
     onSaveClick: () -> Unit,
-    onClick: () -> Unit) {
-
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(230.dp)
+            .height(230.dp)  // tinggi tetap supaya semua card sama
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = CardBg)
     ) {
         Column {
+            // Area gambar produk + tombol save
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp)
             ) {
+                // Gambar produk dari URL
                 AsyncImage(
                     model = product.imageUrl.ifEmpty { null },
                     contentDescription = product.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
+
                 // Tombol save pojok kanan atas
                 Box(
                     modifier = Modifier
@@ -168,6 +205,7 @@ fun ProductCard(
                 }
             }
 
+            // Info produk — nama dan harga
             Column(
                 modifier = Modifier
                     .padding(8.dp)
@@ -180,7 +218,7 @@ fun ProductCard(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis  // teks terpotong jika terlalu panjang
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(

@@ -68,8 +68,19 @@ class PostingVM : ViewModel() {
                     // Ambil nama penjual dari profil akun, atau berikan nama default
                     val sellerName = currentUser.displayName ?: "Pengguna AlterMarkt"
 
-                    // 3. Simpan seluruh data ke Firestore
-                    saveToFirestore(title, priceInt, category, description, downloadUrl, currentUser.uid, sellerName)
+                    // Ambil nomor WA dari Firestore dulu sebelum simpan produk
+                    firestore.collection("users")
+                        .document(currentUser.uid)
+                        .get()
+                        .addOnSuccessListener { userDoc ->
+                            val sellerPhone = userDoc.getString("whatsapp") ?: ""
+
+                            // 3. Simpan seluruh data ke Firestore
+                            saveToFirestore(
+                                title, priceInt, category, description,
+                                downloadUrl, currentUser.uid, sellerName, sellerPhone
+                            )
+                        }
                 }
             }
             .addOnFailureListener { e ->
@@ -78,7 +89,11 @@ class PostingVM : ViewModel() {
             }
     }
 
-    private fun saveToFirestore(title: String, price: Int, category: String, desc: String, imageUrl: String, sellerId: String, sellerName: String) {
+    private fun saveToFirestore(
+        title: String, price: Int, category: String,
+        desc: String, imageUrl: String, sellerId: String,
+        sellerName: String, sellerPhone: String
+    ) {
         // Buat ID unik untuk dokumen produk di Firestore
         val productId = firestore.collection("products").document().id
 
@@ -87,18 +102,19 @@ class PostingVM : ViewModel() {
 
         // Masukkan data ke dalam struktur Product buatan teman Anda
         val newProduct = Product(
-            id = productId,
-            title = title,
-            price = price,
+            id          = productId,
+            title       = title,
+            price       = price,
             description = desc,
-            category = category,
-            imageUrl = imageUrl,
-            sellerId = sellerId,
-            sellerName = sellerName,
+            category    = category,
+            imageUrl    = imageUrl,
+            sellerId    = sellerId,
+            sellerName  = sellerName,
+            sellerPhone = sellerPhone,
             isAvailable = true,
-            viewCount = 0,
-            likeCount = 0,
-            createdAt = currentDate
+            viewCount   = 0,
+            likeCount   = 0,
+            createdAt   = currentDate
         )
 
         firestore.collection("products").document(productId)

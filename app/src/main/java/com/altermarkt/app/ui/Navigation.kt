@@ -1,11 +1,13 @@
 package com.altermarkt.app.ui
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.altermarkt.app.data.local.AppDatabase
 import com.altermarkt.app.data.repository.HomeProductRepository
 import com.altermarkt.app.data.repository.SaveRepo
@@ -13,10 +15,16 @@ import com.altermarkt.app.ui.auth.LoginScreen
 import com.altermarkt.app.ui.auth.RegisterScreen
 import com.altermarkt.app.ui.screen.DetailScreen
 import com.altermarkt.app.ui.screen.HomeScreen
+import com.altermarkt.app.ui.screen.SearchScreen
 import com.altermarkt.app.ui.viewmodel.DetailViewModel
 import com.altermarkt.app.ui.viewmodel.HomeViewModel
 import com.altermarkt.app.ui.viewmodel.SavedVM
 import com.altermarkt.app.ui.viewmodel.SavedVMFactory
+import com.altermarkt.app.ui.viewmodel.SearchViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Scaffold
+import androidx.compose.ui.Modifier
 
 object Routes {
     const val LOGIN    = "login"
@@ -41,13 +49,29 @@ fun AlterMarketNavHost(
     db: AppDatabase
 ) {
     val startDestination = if (isLoggedIn) Routes.HOME else Routes.LOGIN
-
     val context = LocalContext.current
     val repo    = HomeProductRepository(db)
+    val homeViewModel = HomeViewModel(repo, db)
+    val showBottomNav = listOf(
+        Routes.HOME, Routes.SEARCH, Routes.POSTING,
+        Routes.SAVED, Routes.PROFILE
+    )
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    Scaffold(
+        bottomBar = {
+            if (currentRoute in showBottomNav) {
+                BottomNavBar(navController = navController)
+            }
+        },
+        containerColor = Color(0xFF0D0D0D)
+    ) { innerPadding ->
 
     NavHost(
         navController    = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
+        modifier = Modifier.padding(innerPadding)
     ) {
         // ── AUTH ──────────────────────────────────
         composable(Routes.LOGIN) {
@@ -59,15 +83,34 @@ fun AlterMarketNavHost(
 
         // ── HOME ──────────────────────────────────
         composable(Routes.HOME) {
+            val database = AppDatabase.getInstance(context)
+            val dao = database.savedProductDao()
+            val saveRepo = SaveRepo(dao)
+            val savedViewModel: SavedVM = viewModel(
+                factory = SavedVMFactory(saveRepo)
+            )
             HomeScreen(
                 viewModel = HomeViewModel(repo, db),
+                savedVM = savedViewModel,
                 onProductClick = { id -> navController.navigate(Routes.detail(id)) },
                 onSearchClick = { navController.navigate(Routes.SEARCH) }
             )
         }
 
         // ── SEARCH ────────────────────────────────
-        composable(Routes.SEARCH) { }
+        composable(Routes.SEARCH) {
+            val database = AppDatabase.getInstance(context)
+            val dao = database.savedProductDao()
+            val saveRepo = SaveRepo(dao)
+            val savedVM: SavedVM = viewModel(
+                factory = SavedVMFactory(saveRepo)
+            )
+            SearchScreen(
+                viewModel      = SearchViewModel(repo),
+                savedVM        = savedVM,
+                onProductClick = { id -> navController.navigate(Routes.detail(id)) }
+            )
+        }
 
         // ── DETAIL ────────────────────────────────
         composable(Routes.DETAIL) { backStackEntry ->
@@ -133,4 +176,4 @@ fun AlterMarketNavHost(
             )
         }
     }
-}
+}}
