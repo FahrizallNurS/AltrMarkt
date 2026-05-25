@@ -143,7 +143,13 @@ fun AlterMarketNavHost(
             val savedViewModel: SavedVM = viewModel(
                 factory = SavedVMFactory(saveRepo)
             )
-            SavedScreen(viewModel = savedViewModel)
+
+            SavedScreen(
+                viewModel = savedViewModel,
+                onProductClick = { productId ->
+                    navController.navigate(Routes.detail(productId))
+                }
+            )
         }
 
         // ── PROFILE ───────────────────────────────
