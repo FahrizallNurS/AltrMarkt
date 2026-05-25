@@ -44,7 +44,7 @@ fun PostingScreen(
     var description by remember { mutableStateOf("") }
 
     var expanded by remember { mutableStateOf(false) }
-    val kategoriList = listOf("Elektronik", "Fashion", "Buku & Alat Tulis", "Perlengkapan Kos", "Lainnya")
+    val kategoriList = listOf("Semua", "Elektronik", "Buku", "Pakaian")
     var kategoriTerpilih by remember { mutableStateOf(kategoriList[0]) }
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
