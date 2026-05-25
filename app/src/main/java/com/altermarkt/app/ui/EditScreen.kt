@@ -223,13 +223,15 @@ fun EditScreen(
                 // Tombol Simpan Perubahan (Kanan)
                 Button(
                     onClick = {
-                        // Jalankan fungsi update ke ViewModel
+                        val isAvailableBool = statusTerpilih == "Tersedia"
+
                         viewModel.updateProduct(
                             productId = productId,
                             newTitle = namaBarang,
                             newPriceString = hargaBarang,
                             newCategory = kategoriTerpilih,
                             newDesc = deskripsiBarang,
+                            newIsAvailable = isAvailableBool,
                             newImageUri = newImageUri
                         )
                     },

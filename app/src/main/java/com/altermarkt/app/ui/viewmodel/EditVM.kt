@@ -37,8 +37,25 @@ class EditVM : ViewModel() {
         isLoading = true
         firestore.collection("products").document(productId)
             .get()
-            .addOnSuccessListener { document ->
-                product = document.toObject(Product::class.java)
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    // BACA MANUAL SEPERTI REPOSITORY AGAR isAvailable TERBACA AKURAT
+                    product = Product(
+                        id          = doc.id,
+                        title       = doc.getString("title") ?: "",
+                        price       = doc.getLong("price")?.toInt() ?: 0,
+                        description = doc.getString("description") ?: "",
+                        category    = doc.getString("category") ?: "",
+                        imageUrl    = doc.getString("imageUrl") ?: "",
+                        sellerId    = doc.getString("sellerId") ?: "",
+                        sellerName  = doc.getString("sellerName") ?: "",
+                        sellerPhone = doc.getString("sellerPhone") ?: "",
+                        isAvailable = doc.getBoolean("isAvailable") ?: true,
+                        viewCount   = doc.getLong("viewCount")?.toInt() ?: 0,
+                        likeCount   = doc.getLong("likeCount")?.toInt() ?: 0,
+                        createdAt   = doc.getString("createdAt") ?: ""
+                    )
+                }
                 isLoading = false
             }
             .addOnFailureListener { e ->
@@ -48,7 +65,15 @@ class EditVM : ViewModel() {
     }
 
     // 2. Fungsi untuk memperbarui data barang (Teks & Foto Baru jika ada)
-    fun updateProduct(productId: String, newTitle: String, newPriceString: String, newCategory: String, newDesc: String, newImageUri: Uri?) {
+    fun updateProduct(
+        productId: String,
+        newTitle: String,
+        newPriceString: String,
+        newCategory: String,
+        newDesc: String,
+        newIsAvailable: Boolean,
+        newImageUri: Uri?
+    ) {
         val priceInt = newPriceString.replace(Regex("[^0-9]"), "").toIntOrNull() ?: 0
 
         if (newTitle.isBlank() || newPriceString.isBlank() || newCategory.isBlank()) {
@@ -59,16 +84,14 @@ class EditVM : ViewModel() {
         isLoading = true
 
         if (newImageUri != null) {
-            // Jika user memilih foto baru, upload foto baru terlebih dahulu ke Storage
             updateMessage = "Mengunggah foto baru..."
-            val imageFileName = UUID.randomUUID().toString() + ".jpg"
+            val imageFileName = java.util.UUID.randomUUID().toString() + ".jpg"
             val storageRef = storage.reference.child("product_images/$imageFileName")
 
             storageRef.putFile(newImageUri)
                 .addOnSuccessListener {
                     storageRef.downloadUrl.addOnSuccessListener { uri ->
-                        // Jalankan fungsi update ke Firestore dengan URL gambar baru
-                        saveUpdateToFirestore(productId, newTitle, priceInt, newCategory, newDesc, uri.toString())
+                        saveUpdateToFirestore(productId, newTitle, priceInt, newCategory, newDesc, newIsAvailable, uri.toString())
                     }
                 }
                 .addOnFailureListener { e ->
@@ -76,13 +99,19 @@ class EditVM : ViewModel() {
                     updateMessage = "Gagal mengunggah foto baru: ${e.localizedMessage}"
                 }
         } else {
-            // Jika user tidak mengganti foto, gunakan URL gambar yang lama
             val oldImageUrl = product?.imageUrl ?: ""
-            saveUpdateToFirestore(productId, newTitle, priceInt, newCategory, newDesc, oldImageUrl)
+            saveUpdateToFirestore(productId, newTitle, priceInt, newCategory, newDesc, newIsAvailable, oldImageUrl)
         }
     }
-
-    private fun saveUpdateToFirestore(productId: String, title: String, price: Int, category: String, desc: String, imageUrl: String) {
+    private fun saveUpdateToFirestore(
+        productId: String,
+        title: String,
+        price: Int,
+        category: String,
+        desc: String,
+        isAvailable: Boolean,
+        imageUrl: String
+    ) {
         updateMessage = "Memperbarui data..."
 
         val updatedData = mapOf(
@@ -90,6 +119,7 @@ class EditVM : ViewModel() {
             "price" to price,
             "category" to category,
             "description" to desc,
+            "isAvailable" to isAvailable,
             "imageUrl" to imageUrl
         )
 

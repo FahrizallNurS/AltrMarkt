@@ -237,8 +237,6 @@ fun MyProductRowItem(product: Product, onEditClick: (String) -> Unit) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(text = formatRupiah(product.price), color = PrimaryPurple, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
-            }
-
             IconButton(
                 onClick = { onEditClick(product.id) },
                 modifier = Modifier
@@ -253,8 +251,8 @@ fun MyProductRowItem(product: Product, onEditClick: (String) -> Unit) {
                 )
             }
         }
-
     }
+}
 
     fun formatRupiah(nominal: Int): String {
         val localeID = Locale("in", "ID")

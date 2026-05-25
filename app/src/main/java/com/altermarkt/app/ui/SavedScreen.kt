@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -81,7 +81,10 @@ fun SavedScreen(
                 items(savedProducts) { product ->
                     SavedProductCard(
                         product = product,
-                        onClick = { onProductClick(product.productId) }
+                        onClick = { onProductClick(product.productId) },
+                        onRemoveClick = {
+                            viewModel.deleteProduct(product.productId)
+                        }
                     )
                 }
             }
@@ -92,7 +95,8 @@ fun SavedScreen(
 @Composable
 fun SavedProductCard(
     product: SavedProductEntity,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    onRemoveClick: () -> Unit = {}
 ) {
     val formatter = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("id-ID"))
     formatter.maximumFractionDigits = 0
@@ -119,16 +123,19 @@ fun SavedProductCard(
                     contentScale = ContentScale.Crop
                 )
 
+                // --- BAGIAN IKON SIMPAN YANG DIPERBARUI ---
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(12.dp),
+                        .padding(12.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onRemoveClick() },
                     shape = RoundedCornerShape(8.dp),
                     color = Color.White
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
+                        imageVector = Icons.Default.Bookmark,
+                        contentDescription = "Hapus dari simpanan",
                         tint = PrimaryPurple,
                         modifier = Modifier
                             .padding(6.dp)

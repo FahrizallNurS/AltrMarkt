@@ -151,6 +151,23 @@ fun DetailScreen(
                 Text(p.title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                 Text("Rp. ${"%,d".format(p.price)}", color = Color(0xFF00CFFF), fontSize = 16.sp)
 
+                // --- LABEL STATUS KETERSEDIAAN ---
+                val statusText = if (p.isAvailable) "Tersedia" else "Terjual"
+                val statusColor = if (p.isAvailable) Color(0xFF4CAF50) else Color(0xFFE53935)
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = statusColor.copy(alpha = 0.2f)
+                ) {
+                    Text(
+                        text = statusText,
+                        color = statusColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+
                 // Deskripsi produk
                 Text("Deskripsi Produk", color = TextMuted, fontSize = 12.sp)
                 Text(p.description, color = Color(0xFFAAAAAA), fontSize = 12.sp, lineHeight = 20.sp)
