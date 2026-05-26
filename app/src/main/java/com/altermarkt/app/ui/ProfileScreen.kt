@@ -43,7 +43,7 @@ fun ProfileScreen(
 
     var namaLengkap by remember { mutableStateOf("") }
     var nomorWhatsApp by remember { mutableStateOf("") }
-    var bioProfile by remember { mutableStateOf("Mahasiswa") } // Nilai default statis sesuai mockup
+    var bioProfile by remember { mutableStateOf("") }
 
     // Sinkronisasi data user dari Firestore ke form input teks
     LaunchedEffect(user) {
@@ -171,12 +171,32 @@ fun ProfileScreen(
                 // --- TOMBOL SIMPAN PROFIL MOCKUP ---
                 item {
                     Button(
-                        onClick = { Toast.makeText(context, "Profil diperbarui (Simulasi)", Toast.LENGTH_SHORT).show() },
+                        onClick = {
+                            if (namaLengkap.isBlank() || nomorWhatsApp.isBlank()) {
+                                Toast.makeText(context, "Nama dan Nomor WhatsApp tidak boleh kosong!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                profileViewModel.updateProfile(
+                                    newName = namaLengkap,
+                                    newWhatsapp = nomorWhatsApp,
+                                    newBio = bioProfile,
+                                    onSuccess = {
+                                        Toast.makeText(context, "Profil berhasil diperbarui!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onFailure = { error ->
+                                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth().height(45.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
                         shape = RoundedCornerShape(25.dp)
                     ) {
-                        Text(text = "Simpan Profil", fontWeight = FontWeight.Bold, color = Color.White)
+                        if (profileViewModel.isLoading) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text(text = "Simpan Profil", fontWeight = FontWeight.Bold, color = Color.White)
+                        }
                     }
                 }
 

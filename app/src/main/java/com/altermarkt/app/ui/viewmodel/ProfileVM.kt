@@ -31,6 +31,40 @@ class ProfileVM : ViewModel() {
         loadProfileAndProducts()
     }
 
+    // Tambahkan fungsi ini di dalam class ProfileVM
+    fun updateProfile(
+        newName: String,
+        newWhatsapp: String,
+        newBio: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        // Ambil ID pengguna yang sedang login (sesuaikan dengan logic Auth tim Anda)
+        val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        val updatedData = mapOf(
+            "name" to newName,
+            "whatsapp" to newWhatsapp,
+            "bio" to newBio
+        )
+
+        isLoading = true
+        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+
+        firestore.collection("users").document(userId)
+            .update(updatedData)
+            .addOnSuccessListener {
+                isLoading = false
+                // Muat ulang profil agar data di layar langsung sinkron yang baru
+                loadProfileAndProducts()
+                onSuccess()
+            }
+            .addOnFailureListener { e ->
+                isLoading = false
+                onFailure(e.localizedMessage ?: "Gagal memperbarui profil")
+            }
+    }
+
     fun loadProfileAndProducts() {
         viewModelScope.launch {
             isLoading = true
