@@ -39,6 +39,9 @@ fun DetailScreen(
     val isLoading by viewModel.isLoading.collectAsState(initial = false)
     val context = LocalContext.current
 
+    val isLiked by viewModel.isLiked.collectAsState(initial = false)
+    val likeCount by viewModel.likeCount.collectAsState(initial = 0)
+
     LaunchedEffect(productId) { viewModel.loadProduct(productId) }
 
     Column(
@@ -48,7 +51,6 @@ fun DetailScreen(
             .padding(top = 32.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        // Header — tombol back dan judul
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -69,7 +71,6 @@ fun DetailScreen(
             }
         }
 
-        // Loading indicator
         if (isLoading) {
             Box(
                 modifier = Modifier.fillMaxWidth().height(300.dp),
@@ -80,7 +81,6 @@ fun DetailScreen(
         }
 
         product?.let { p ->
-            // Gambar produk
             AsyncImage(
                 model = p.imageUrl.ifEmpty { null },
                 contentDescription = p.title,
@@ -88,18 +88,15 @@ fun DetailScreen(
                 contentScale = ContentScale.Crop
             )
 
-            // Container utama untuk semua info produk
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Badge kategori dan tombol like dalam 1 baris — kiri dan kanan
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Badge kategori produk di sebelah kiri
                     Surface(
                         color = PurpleAccent,
                         shape = RoundedCornerShape(20.dp)
@@ -112,33 +109,21 @@ fun DetailScreen(
                         )
                     }
 
-                    // State like — hanya tersimpan selama session, tidak ke database
-                    var isLiked by remember { mutableStateOf(false) }
-                    var likeCount by remember { mutableStateOf(p.likeCount) }
-
-                    // Tombol like di sebelah kanan
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
                             .background(CardBg)
-                            .clickable {
-                                // Toggle like — tambah atau kurangi jumlah like
-                                isLiked = !isLiked
-                                likeCount = if (isLiked) likeCount + 1 else likeCount - 1
-                            }
+                            .clickable { viewModel.toggleLike(productId) }
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        // Icon berubah saat di-like — merah jika liked, abu jika belum
                         Icon(
-                            imageVector = if (isLiked) Icons.Default.Favorite
-                            else Icons.Default.FavoriteBorder,
+                            imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Like",
                             tint = if (isLiked) Color.Red else TextMuted,
                             modifier = Modifier.size(18.dp)
                         )
-                        // Jumlah like
                         Text(
                             text = "$likeCount",
                             color = if (isLiked) Color.Red else TextMuted,
@@ -147,14 +132,11 @@ fun DetailScreen(
                     }
                 }
 
-                // Nama dan harga produk
                 Text(p.title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                 Text("Rp. ${"%,d".format(p.price)}", color = Color(0xFF00CFFF), fontSize = 16.sp)
 
-                // --- LABEL STATUS KETERSEDIAAN ---
                 val statusText = if (p.isAvailable) "Tersedia" else "Terjual"
                 val statusColor = if (p.isAvailable) Color(0xFF4CAF50) else Color(0xFFE53935)
-
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = statusColor.copy(alpha = 0.2f)
@@ -168,11 +150,9 @@ fun DetailScreen(
                     )
                 }
 
-                // Deskripsi produk
                 Text("Deskripsi Produk", color = TextMuted, fontSize = 12.sp)
                 Text(p.description, color = Color(0xFFAAAAAA), fontSize = 12.sp, lineHeight = 20.sp)
 
-                // Info penjual
                 Text("Informasi Penjual", color = TextMuted, fontSize = 12.sp)
                 Card(
                     shape = RoundedCornerShape(12.dp),
@@ -183,7 +163,6 @@ fun DetailScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Avatar inisial nama penjual
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
@@ -204,7 +183,6 @@ fun DetailScreen(
                     }
                 }
 
-                // Tombol WhatsApp — otomatis konversi format nomor HP
                 Button(
                     onClick = {
                         var phone = p.sellerPhone.trim()

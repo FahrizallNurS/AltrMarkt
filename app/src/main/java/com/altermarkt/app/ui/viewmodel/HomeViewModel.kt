@@ -28,13 +28,15 @@ class HomeViewModel(
         syncProducts()
         loadProducts()
     }
+
     fun syncProducts() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
                 repo.syncFromFirestore()
+                android.util.Log.d("HomeVM", "Sync BERHASIL")
             } catch (e: Exception) {
-                android.util.Log.e("HomeVM", "Sync error: ${e.message}")
+                android.util.Log.e("HomeVM", "Sync GAGAL: ${e.message}")
             }
             _isLoading.value = false
         }

@@ -34,10 +34,7 @@ class HomeProductRepository(private val db: AppDatabase) {
 
     // Sync data dari Firestore ke Room (online → lokal)
     suspend fun syncFromFirestore() {
-        // Ambil semua dokumen dari collection products di Firestore
         val snapshot = firestore.collection("products").get().await()
-
-        // Konversi setiap dokumen Firestore menjadi HomeProductEntity
         val entities = snapshot.documents.mapNotNull { doc ->
             HomeProductEntity(
                 id          = doc.id,
@@ -55,7 +52,6 @@ class HomeProductRepository(private val db: AppDatabase) {
                 createdAt   = doc.getString("createdAt") ?: ""
             )
         }
-
         // Simpan ke Room (insert atau update jika sudah ada)
         dao.upsertProducts(entities)
     }
